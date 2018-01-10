@@ -1,0 +1,61 @@
+# Copyright 2017 The Gardener Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+      - name: vpn-seed
+        image: eu.gcr.io/sap-cloud-platform-dev1/garden/vpn/seed:v0.0.10
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: IDENTITY_FILE
+          value: /srv/ssh/id_rsa
+        - name: USER
+          value: root
+        - name: SERVICE_NETWORK
+          value: 100.64.0.0/13
+        - name: POD_NETWORK
+          value: 100.64.0.0/11
+        - name: NODE_NETWORK
+          value: 10.250.0.0/16
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - "NET_ADMIN"
+        volumeMounts:
+        - name: vpn-ssh-keypair
+          mountPath: /srv/ssh
+      volumes:
+      - name: vpn-ssh-keypair
+        secret:
+          secretName: vpn-ssh-keypair
