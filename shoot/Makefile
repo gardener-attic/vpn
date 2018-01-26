@@ -13,7 +13,7 @@
 # limitations under the License.
 
 PROJECT          := vpn/shoot
-VERSION          := $(shell cat VERSION)
+VERSION          := $(shell cat ../VERSION)
 REGISTRY         := eu.gcr.io/sap-cloud-platform-dev1
 IMAGE_REPOSITORY := $(REGISTRY)/garden/$(PROJECT)
 IMAGE_TAG        := $(VERSION)
