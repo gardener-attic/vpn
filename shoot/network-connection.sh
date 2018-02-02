@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash -e
-
 function log() {
   echo "[$(date -u)]: $*"
 }
@@ -48,8 +46,8 @@ fi
 
 
 while true; do
-  TUN_DEVICES=$(ip addr | grep -e 'tun[0-9]*:' | sed -E 's/^.*(: (tun[0-9]*)\:).*/\2/')
-  if [[ ${#TUN_DEVICES[@]} == 0 ]]; then
+  TUN_DEVICES="$(ip addr | grep -e 'tun[0-9]*:' | sed -E 's/^.*(: (tun[0-9]*)\:).*/\2/')"
+  if [[ -z "$TUN_DEVICES" ]]; then
     log "no tun interfaces found, retry in 5 seconds..."
     sleep 5
   else

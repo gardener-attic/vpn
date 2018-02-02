@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash -e
-
 function log() {
   echo "[$(date -u)]: $*"
 }
@@ -58,13 +56,13 @@ function identify_endpoint() {
   ENDPOINTS="$(echo "$SERVICE_STATUS" | jq -r 'if (.status | type) == "object" and (.status.loadBalancer | type) == "object" and (.status.loadBalancer.ingress | type) == "array" and (.status.loadBalancer.ingress | length) > 0 then .status.loadBalancer.ingress | map(if(. | has("ip")) then .ip else .hostname end) | .[] else empty end')"
   set -e
 
+ENDPOINT=""
   if [[ -z "$ENDPOINTS" || "$ENDPOINTS" == "null" ]]; then
     log "error: could not identify any endpoints"
     return
   fi
 
   log "found endpoints: [ $(echo $ENDPOINTS | tr "\n" " ")]"
-  ENDPOINT=""
   for endpoint in $ENDPOINTS; do
     log "checking whether port 22 is open on $endpoint ..."
     if ! nc -z -v -w 3 "$endpoint" 22 &> /dev/null; then
