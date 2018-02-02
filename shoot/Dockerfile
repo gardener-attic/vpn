@@ -22,7 +22,7 @@ RUN apk add --update bash curl openssh rsync iptables && \
     cp -a /etc/ssh /etc/ssh.cache && \
     rm -rf /var/cache/apk/*
 
-ADD ./network-connection.sh /network-connection
+ADD shoot/network-connection.sh /network-connection
 
 EXPOSE 22
 

@@ -16,7 +16,7 @@ FROM alpine:3.7
 
 RUN apk add --update bash curl openssh-client jq
 
-ADD ./network-connection.sh /network-connection
+ADD seed/network-connection.sh /network-connection
 
 # We use "exec" and "trap 'exit' TERM" in the bash script, otherwise,
 # the script won't recieve and react to SIGTERM
