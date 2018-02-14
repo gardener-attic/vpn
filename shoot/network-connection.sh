@@ -44,6 +44,10 @@ fi
 # start ssh daemon in background
 /usr/sbin/sshd -D -f /etc/ssh/sshd_config &
 
+# Calico 3.0 disabled IP forwarding by default for all containers
+# Let's enable IP forwarding only for vpn-shoot, thought to be only an intermediate solution. The preferred solution would be to use Calico policies (https://docs.projectcalico.org/v3.0/reference/calicoctl/resources/globalnetworkpolicy).
+# See also: https://github.com/gardener/vpn/issues/18
+echo 1 > /proc/sys/net/ipv4/ip_forward
 
 while true; do
   TUN_DEVICES="$(ip addr | grep -e 'tun[0-9]*:' | sed -E 's/^.*(: (tun[0-9]*)\:).*/\2/')"
