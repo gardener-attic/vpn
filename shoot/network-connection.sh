@@ -56,11 +56,12 @@ while true; do
     sleep 5
   else
     for device in $TUN_DEVICES; do
+      TUN_DEVICE_NR=$(echo $device | sed -E 's/^tun(.*)$/\1/')
+      LOCAL_IP="192.168.111.$(expr 127 + $TUN_DEVICE_NR)"
+      REMOTE_IP="192.168.111.$TUN_DEVICE_NR"
+
       if ! ip addr | grep -A 3 "$device": | grep 192 1>/dev/null; then
         log "success: $device found, adding peer"
-        TUN_DEVICE_NR=$(echo $device | sed -E 's/^tun(.*)$/\1/')
-        LOCAL_IP="192.168.111.$(expr 127 + $TUN_DEVICE_NR)"
-        REMOTE_IP="192.168.111.$TUN_DEVICE_NR"
 
         ip addr add local $LOCAL_IP peer $REMOTE_IP broadcast $LOCAL_IP dev $device
         ip link set $device up
@@ -71,6 +72,11 @@ while true; do
           iptables --append FORWARD --in-interface $device -j ACCEPT
         fi
         log "ip routes added"
+      fi
+
+      if ! ping $REMOTE_IP -w 10 -c 1 1>/dev/null; then
+        log "$REMOTE_IP is not pingable although the tunnel device exists. will exit"
+        exit 1
       fi
     done
     sleep 5

@@ -33,11 +33,11 @@ shoot-docker-image:
 	@docker build -t $(SHOOT_IMAGE_REPOSITORY):$(SHOOT_IMAGE_TAG) -f shoot/Dockerfile --rm .
 
 
-.PHONY: docker-image
-docker-image: seed-docker-image shoot-docker-image
+.PHONY: docker-images
+docker-images: seed-docker-image shoot-docker-image
 
 .PHONY: release
-release: docker-image docker-login docker-push
+release: docker-images docker-login docker-push
 
 .PHONY: docker-login
 docker-login:
