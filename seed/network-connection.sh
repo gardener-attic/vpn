@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -e
 #
 # Copyright 2017 The Gardener Authors.
 #
@@ -34,6 +34,14 @@ service_name="${SERVICE_NAME:-vpn-shoot}"
 failed_pings=0
 successful_ssh_connections_without_ping=0
 
+function get_host() {
+  if [[ -z "$MAIN_VPN_SEED" ]]; then
+    echo "$KUBE_APISERVER_SERVICE_HOST:$KUBE_APISERVER_SERVICE_PORT"
+  else
+    echo "127.0.0.1"
+  fi
+}
+
 function identify_endpoint() {
   log "trying to identify the endpoint (load balancer name of $service_name service) myself..."
 
@@ -45,7 +53,7 @@ function identify_endpoint() {
                       --user "$BASIC_AUTH" \
                       --header "Accept: application/json" \
                       --request GET \
-                      "https://$KUBE_APISERVER_SERVICE_HOST:$KUBE_APISERVER_SERVICE_PORT/api/v1/namespaces/kube-system/services/$service_name")"
+                      "https://$(get_host)/api/v1/namespaces/kube-system/services/$service_name")"
   ENDPOINTS="$(echo "$SERVICE_STATUS" | jq -r 'if (.status | type) == "object" and (.status.loadBalancer | type) == "object" and (.status.loadBalancer.ingress | type) == "array" and (.status.loadBalancer.ingress | length) > 0 then .status.loadBalancer.ingress | map(if(. | has("ip")) then .ip else .hostname end) | .[] else empty end')"
   set -e
 
@@ -79,7 +87,7 @@ function restart_vpn_shoot() {
                 --user "$BASIC_AUTH" \
                 --header "Accept: application/json" \
                 --request GET \
-                "https://$KUBE_APISERVER_SERVICE_HOST:$KUBE_APISERVER_SERVICE_PORT/api/v1/namespaces/kube-system/pods?labelSelector=app=$service_name")"
+                "https://$(get_host)/api/v1/namespaces/kube-system/pods?labelSelector=app=$service_name")"
   POD_NAMES="$(echo $RESPONSE | jq -r '.items[].metadata.name')"
 
   for name in "$POD_NAMES"; do
