@@ -73,11 +73,6 @@ while true; do
         fi
         log "ip routes added"
       fi
-
-      if ! ping $REMOTE_IP -w 10 -c 1 1>/dev/null; then
-        log "$REMOTE_IP is not pingable although the tunnel device exists. will exit"
-        exit 1
-      fi
     done
     sleep 5
   fi
