@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -e
 #
 # Copyright 2017 The Gardener Authors.
 #
@@ -18,7 +18,13 @@ function log() {
   echo "[$(date -u)]: $*"
 }
 
-trap 'exit' TERM SIGINT
+# copy authorized keys from
+authorized_keys_file="${AUTHORIZED_KEYS_FILE:-/root/.ssh/authorized_keys}"
+if [[ ! -f /root/.ssh/authorized_keys ]]; then
+  cp "$authorized_keys_file" /root/.ssh/authorized_keys
+fi
+
+sshd_config="${CONFIG_FILE:-/etc/ssh/sshd_config}"
 
 # Copy default config from cache
 if [ ! "$(ls -A /etc/ssh)" ]; then
@@ -41,8 +47,13 @@ if [ -w /etc/authorized_keys ]; then
     chmod 755 /etc/authorized_keys
     find /etc/authorized_keys/ -type f -exec chmod 644 {} \;
 fi
+
 # start ssh daemon in background
-/usr/sbin/sshd -D -f /etc/ssh/sshd_config &
+/usr/sbin/sshd -D -f "$sshd_config" &
+SSHD_PID=$!
+
+# register trap handler
+trap "kill $SSHD_PID; exit" TERM SIGINT
 
 # Calico 3.0 disabled IP forwarding by default for all containers
 # Let's enable IP forwarding only for vpn-shoot, thought to be only an intermediate solution. The preferred solution would be to use Calico policies (https://docs.projectcalico.org/v3.0/reference/calicoctl/resources/globalnetworkpolicy).
