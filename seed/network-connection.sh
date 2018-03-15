@@ -24,7 +24,11 @@ if [[ -z "$IDENTITY_FILE" ]]; then
   log "error: environment variable IDENTITY_FILE not set"
   exit 1
 fi
-chmod 600 $IDENTITY_FILE
+
+# copy identity file into another directory (it is not writeable, thus we cannot change the mode)
+mkdir -p /var/vpn-seed
+cp $IDENTITY_FILE /var/vpn-seed/$IDENTITY_FILE
+chmod 600 /var/vpn-seed/$IDENTITY_FILE
 
 service_network="${SERVICE_NETWORK:-100.64.0.0/13}"
 pod_network="${POD_NETWORK:-100.96.0.0/11}"
@@ -137,7 +141,7 @@ while true; do
           -o "ServerAliveInterval=30" \
           -o "ServerAliveCountMax=5" \
           -o "UserKnownHostsFile=/dev/null" \
-          -i "$IDENTITY_FILE" \
+          -i "/var/vpn-seed/$IDENTITY_FILE" \
           -f \
           -N \
           "$USER"@"$ENDPOINT"; then
