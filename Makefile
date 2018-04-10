@@ -45,7 +45,7 @@ openvpn-shoot-docker-image:
 	@docker build -t $(OPENVPN_SHOOT_IMAGE_REPOSITORY):$(OPENVPN_SHOOT_IMAGE_TAG) -f openvpn-shoot/Dockerfile --rm .
 
 .PHONY: docker-images
-docker-images: seed-docker-image shoot-docker-image
+docker-images: seed-docker-image shoot-docker-image openvpn-shoot-docker-image openvpn-seed-docker-image
 
 .PHONY: release
 release: docker-images docker-login docker-push
