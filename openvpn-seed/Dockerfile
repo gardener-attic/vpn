@@ -1,4 +1,4 @@
-# Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+# Copyright 2017 The Gardener Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: vpn-shoot
-  namespace: kube-system
-    app: vpn-shoot
-spec:
-  selector:
-    app: vpn-shoot
-  type: LoadBalancer
-  ports:
-  - name: sshd
-    protocol: TCP
-    port: 22
-    targetPort: 22
+FROM alpine:3.7
+
+RUN apk add --update bash curl openvpn jq && \
+    rm -rf /var/cache/apk/*
+
+ADD openvpn-seed/network-connection.sh openvpn-seed/openvpn.config /
+
+# We use "exec" and "trap 'exit' TERM" in the bash script, otherwise,
+# the script won't recieve and react to SIGTERM
+CMD exec /network-connection.sh

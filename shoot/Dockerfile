@@ -14,7 +14,7 @@
 
 FROM alpine:3.7
 
-RUN apk add --update bash curl openssh rsync iptables && \
+RUN apk add --update bash curl openssh rsync iptables openvpn && \
     mkdir -p ~root/.ssh /etc/authorized_keys && chmod 700 ~root/.ssh/ && \
     sed -i -e 's@^AuthorizedKeysFile.*@@g' /etc/ssh/sshd_config  && \
     echo -e "AuthorizedKeysFile\t.ssh/authorized_keys /etc/authorized_keys/%u" >> /etc/ssh/sshd_config && \

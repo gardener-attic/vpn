@@ -15,11 +15,15 @@
 VERSION                := $(shell cat VERSION)
 REGISTRY               := eu.gcr.io/gardener-project/gardener
 PREFIX                 := vpn
+OPENVPN_PREFIX         := openvpn
 SEED_IMAGE_REPOSITORY  := $(REGISTRY)/$(PREFIX)-seed
 SEED_IMAGE_TAG         := $(VERSION)
 SHOOT_IMAGE_REPOSITORY := $(REGISTRY)/$(PREFIX)-shoot
 SHOOT_IMAGE_TAG        := $(VERSION)
-
+OPENVPN_SEED_IMAGE_REPOSITORY  := $(REGISTRY)/$(OPENVPN_PREFIX)-seed
+OPENVPN_SEED_IMAGE_TAG         := $(VERSION)
+OPENVPN_SHOOT_IMAGE_REPOSITORY := $(REGISTRY)/$(OPENVPN_PREFIX)-shoot
+OPENVPN_SHOOT_IMAGE_TAG        := $(VERSION)
 PATH                   := $(GOBIN):$(PATH)
 
 export PATH
@@ -32,6 +36,13 @@ seed-docker-image:
 shoot-docker-image:
 	@docker build -t $(SHOOT_IMAGE_REPOSITORY):$(SHOOT_IMAGE_TAG) -f shoot/Dockerfile --rm .
 
+.PHONY: openvpn-seed-docker-image
+openvpn-seed-docker-image:
+	@docker build -t $(OPENVPN_SEED_IMAGE_REPOSITORY):$(OPENVPN_SEED_IMAGE_TAG) -f openvpn-seed/Dockerfile --rm .
+
+.PHONY: openvpn-shoot-docker-image
+openvpn-shoot-docker-image:
+	@docker build -t $(OPENVPN_SHOOT_IMAGE_REPOSITORY):$(OPENVPN_SHOOT_IMAGE_TAG) -f openvpn-shoot/Dockerfile --rm .
 
 .PHONY: docker-images
 docker-images: seed-docker-image shoot-docker-image
@@ -47,5 +58,9 @@ docker-login:
 docker-push:
 	@if ! docker images $(SEED_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(SEED_IMAGE_TAG); then echo "$(SEED_IMAGE_REPOSITORY) version $(SEED_IMAGE_TAG) is not yet built. Please run 'make seed-docker-image'"; false; fi
 	@if ! docker images $(SHOOT_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(SHOOT_IMAGE_TAG); then echo "$(SHOOT_IMAGE_REPOSITORY) version $(SHOOT_IMAGE_TAG) is not yet built. Please run 'make shoot-docker-image'"; false; fi
+	@if ! docker images $(OPENVPN_SEED_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(OPENVPN_SEED_IMAGE_TAG); then echo "$(OPENVPN_SEED_IMAGE_REPOSITORY) version $(SEED_IMAGE_TAG) is not yet built. Please run 'make openvpn-seed-docker-image'"; false; fi
+	@if ! docker images $(OPENVPN_SHOOT_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(OPENVPN_SHOOT_IMAGE_TAG); then echo "$(OPENVPN_SHOOT_IMAGE_REPOSITORY) version $(SHOOT_IMAGE_TAG) is not yet built. Please run 'make openvpn-shoot-docker-image'"; false; fi
 	@gcloud docker -- push $(SEED_IMAGE_REPOSITORY):$(SEED_IMAGE_TAG)
 	@gcloud docker -- push $(SHOOT_IMAGE_REPOSITORY):$(SHOOT_IMAGE_TAG)
+	@gcloud docker -- push $(OPENVPN_SEED_IMAGE_REPOSITORY):$(OPENVPN_SEED_IMAGE_TAG)
+	@gcloud docker -- push $(OPENVPN_SHOOT_IMAGE_REPOSITORY):$(OPENVPN_SHOOT_IMAGE_TAG)
