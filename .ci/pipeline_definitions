@@ -1,0 +1,35 @@
+vpn:
+  template: 'default'
+  base_definition:
+    repo: ~
+    traits:
+      version:
+        preprocess:
+          'inject-commit-hash'
+      publish:
+        dockerimages:
+          vpn-seed:
+            inputs:
+              repos:
+                source: ~ # default
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/vpn-seed'
+            dockerfile: 'seed/Dockerfile'
+          vpn-shoot:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/vpn-shoot'
+            dockerfile: 'shoot/Dockerfile'
+    steps: ~
+  variants:
+    head-update: ~
+    pull-request:
+      traits:
+        pull-request:
+          repo: 'source' # default
+          require_label: 'ok-to-test' # default
+    release:
+      traits:
+        version:
+          preprocess: 'finalise'
+        release:
+          nextversion: 'bump_minor'
