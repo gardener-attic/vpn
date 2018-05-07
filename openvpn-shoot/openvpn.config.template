@@ -35,10 +35,10 @@ dh dh2048.pem
 
 duplicate-cn
 
-key "/srv/secrets/server-key.pem"
-cert "/srv/secrets/server-cert.pem"
-ca "/srv/secrets/ca-crt.pem"
-dh "/srv/secrets/dh2048.pem"
+key "/srv/secrets/vpn-shoot/server-key.pem"
+cert "/srv/secrets/vpn-shoot/server-cert.pem"
+ca "/srv/secrets/vpn-shoot/ca-crt.pem"
+dh "/srv/secrets/dh/dh2048.pem"
 
-tls-auth "/srv/secrets/vpn.tlsauth" 0
+tls-auth "/srv/secrets/tlsauth/vpn.tlsauth" 0
 
