@@ -23,6 +23,13 @@ trap 'exit' TERM SIGINT
 service_name="${SERVICE_NAME:-openvpn-shoot}"
 openvpn_port="${OPENVPN_PORT:-1194}"
 
+tcp_keepalive_time="${TCP_KEEPALIVE_TIME:-7200}"
+tcp_keepalive_intvl="${TCP_KEEPALIVE_INTVL:-75}"
+tcp_keepalive_probes="${TCP_KEEPALIVE_PROBES:-9}"
+tcp_retries2="${TCP_RETRIES2:-5}"
+
+curl_timeout_options="--connect-timeout 5 --max-time 5"
+
 function get_host() {
   if [[ -z "$MAIN_VPN_SEED" ]]; then
     echo "$KUBE_APISERVER_SERVICE_HOST:$KUBE_APISERVER_SERVICE_PORT"
@@ -37,6 +44,7 @@ function identify_endpoint() {
   set +e
   BASIC_AUTH="admin:$(cat /srv/auth/basic_auth.csv | sed -E 's/^([^,]*),.*$/\1/')"
   SERVICE_STATUS="$(curl \
+                      ${curl_timeout_options} \
                       --silent \
                       --insecure \
                       --user "$BASIC_AUTH" \
@@ -71,6 +79,7 @@ function restart_vpn_shoot() {
 
   BASIC_AUTH="admin:$(cat /srv/kubernetes/auth/basic_auth.csv | sed -E 's/^([^,]*),.*$/\1/')"
   RESPONSE="$(curl \
+                ${curl_timeout_options} \
                 --silent \
                 --insecure \
                 --user "$BASIC_AUTH" \
@@ -81,6 +90,7 @@ function restart_vpn_shoot() {
 
   for name in "$POD_NAMES"; do
     curl \
+      ${curl_timeout_options} \
       --silent \
       --insecure \
       --user "$BASIC_AUTH" \
@@ -93,6 +103,15 @@ function restart_vpn_shoot() {
   log "deletion done"
 }
 
+function configure_tcp() {
+    echo $tcp_keepalive_time > /proc/sys/net/ipv4/tcp_keepalive_time
+    echo $tcp_keepalive_intvl > /proc/sys/net/ipv4/tcp_keepalive_intvl
+    echo $tcp_keepalive_probes > /proc/sys/net/ipv4/tcp_keepalive_probes
+
+    echo $tcp_retries2 > /proc/sys/net/ipv4/tcp_retries2
+}
+
+configure_tcp
 
 while : ; do
 
