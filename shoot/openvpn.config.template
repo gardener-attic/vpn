@@ -12,13 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.7
+mode server
+tls-server
+proto tcp-server
+dev tun0
 
-RUN apk add --update bash curl openvpn jq && \
-    rm -rf /var/cache/apk/*
+cipher AES-256-CBC
 
-ADD seed/network-connection.sh seed/openvpn.config /
+# port can always be 1194 here as it is not visible externally. A different
+# port can be configured for the external load balancer in the service
+# manifest
+port 1194
 
-# We use "exec" and "trap 'exit' TERM" in the bash script, otherwise,
-# the script won't recieve and react to SIGTERM
-CMD exec /network-connection.sh
+keepalive 10 60
+server 192.168.123.0 255.255.255.0
+
+push "route ${SERVICE_NETWORK_ADDRESS} ${SERVICE_NETWORK_NETMASK}"
+push "route ${POD_NETWORK_ADDRESS} ${POD_NETWORK_NETMASK}"
+push "route ${NODE_NETWORK_ADDRESS} ${NODE_NETWORK_NETMASK}"
+
+dh dh2048.pem
+
+duplicate-cn
+
+key "/srv/secrets/vpn-shoot/tls.key"
+cert "/srv/secrets/vpn-shoot/tls.crt"
+ca "/srv/secrets/vpn-shoot/ca.crt"
+dh "/srv/secrets/dh/dh2048.pem"
+
+tls-auth "/srv/secrets/tlsauth/vpn.tlsauth" 0

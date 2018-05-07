@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+# Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,73 +18,66 @@ function log() {
   echo "[$(date -u)]: $*"
 }
 
-# copy authorized keys from
-authorized_keys_file="${AUTHORIZED_KEYS_FILE:-/root/.ssh/authorized_keys}"
-if [[ ! -f /root/.ssh/authorized_keys ]]; then
-  cp "$authorized_keys_file" /root/.ssh/authorized_keys
-fi
+trap 'exit' TERM SIGINT
 
-sshd_config="${CONFIG_FILE:-/etc/ssh/sshd_config}"
+service_network="${SERVICE_NETWORK:-100.64.0.0/13}"
+pod_network="${POD_NETWORK:-100.96.0.0/11}"
+node_network="${NODE_NETWORK:-10.250.0.0/16}"
 
-# Copy default config from cache
-if [ ! "$(ls -A /etc/ssh)" ]; then
-   cp -a /etc/ssh.cache/* /etc/ssh/
-fi
-# Generate Host keys, if required
-if ! ls /etc/ssh/ssh_host_* 1> /dev/null 2>&1; then
-    ssh-keygen -A
-fi
-# Fix permissions, if writable
-if [ -w ~/.ssh ]; then
-    chown root:root ~/.ssh && chmod 700 ~/.ssh/
-fi
-if [ -w ~/.ssh/authorized_keys ]; then
-    chown root:root ~/.ssh/authorized_keys
-    chmod 600 ~/.ssh/authorized_keys
-fi
-if [ -w /etc/authorized_keys ]; then
-    chown root:root /etc/authorized_keys
-    chmod 755 /etc/authorized_keys
-    find /etc/authorized_keys/ -type f -exec chmod 644 {} \;
-fi
+# calculate netmask for given CIDR (required by openvpn)
+#
+CIDR2Netmask() {
+    local cidr="$1"
 
-# start ssh daemon in background
-/usr/sbin/sshd -D -f "$sshd_config" &
-SSHD_PID=$!
+    local ip=$(echo $cidr | cut -f1 -d/)
+    local numon=$(echo $cidr | cut -f2 -d/)
 
-# register trap handler
-trap "kill $SSHD_PID; exit" TERM SIGINT
+    local numoff=$(( 32 - $numon ))
+    local start=
+    local end=
+    while [ "$numon" -ne "0" ]; do
+            start=1${start}
+            numon=$(( $numon - 1 ))
+    done
+    while [ "$numoff" -ne "0" ]; do
+        end=0${end}
+        numoff=$(( $numoff - 1 ))
+    done
+    local bitstring=$start$end
 
-# Calico 3.0 disabled IP forwarding by default for all containers
-# Let's enable IP forwarding only for vpn-shoot, thought to be only an intermediate solution. The preferred solution would be to use Calico policies (https://docs.projectcalico.org/v3.0/reference/calicoctl/resources/globalnetworkpolicy).
-# See also: https://github.com/gardener/vpn/issues/18
+    bitmask=$(echo "obase=16 ; $(( 2#$bitstring )) " | bc | sed 's/.\{2\}/& /g')
+
+    local str=
+    for t in $bitmask ; do
+        str=$str.$((16#$t))
+    done
+
+    echo $str | cut -f2-  -d\.
+}
+
+service_network_address=$(echo $service_network | cut -f1 -d/)
+service_network_netmask=$(CIDR2Netmask $service_network)
+
+pod_network_address=$(echo $pod_network | cut -f1 -d/)
+pod_network_netmask=$(CIDR2Netmask $pod_network)
+
+node_network_address=$(echo $node_network | cut -f1 -d/)
+node_network_netmask=$(CIDR2Netmask $node_network)
+
+sed -e "s/\${SERVICE_NETWORK_ADDRESS}/${service_network_address}/" \
+    -e "s/\${SERVICE_NETWORK_NETMASK}/${service_network_netmask}/" \
+    -e "s/\${POD_NETWORK_ADDRESS}/${pod_network_address}/" \
+    -e "s/\${POD_NETWORK_NETMASK}/${pod_network_netmask}/" \
+    -e "s/\${NODE_NETWORK_ADDRESS}/${node_network_address}/" \
+    -e "s/\${NODE_NETWORK_NETMASK}/${node_network_netmask}/" openvpn.config.template > openvpn.config
+
+
+# make sure forwarding is enabled
+#
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
-while true; do
-  TUN_DEVICES="$(ip addr | grep -e 'tun[0-9]*:' | sed -E 's/^.*(: (tun[0-9]*)\:).*/\2/')"
-  if [[ -z "$TUN_DEVICES" ]]; then
-    log "no tun interfaces found, retry in 5 seconds..."
-    sleep 5
-  else
-    for device in $TUN_DEVICES; do
-      TUN_DEVICE_NR=$(echo $device | sed -E 's/^tun(.*)$/\1/')
-      LOCAL_IP="192.168.111.$(expr 127 + $TUN_DEVICE_NR)"
-      REMOTE_IP="192.168.111.$TUN_DEVICE_NR"
+# enable forwarding and NAT
+iptables --append FORWARD --in-interface tun0 -j ACCEPT
+iptables --append POSTROUTING --out-interface eth0 --table nat -j MASQUERADE
 
-      if ! ip addr | grep -A 3 "$device": | grep 192 1>/dev/null; then
-        log "success: $device found, adding peer"
-
-        ip addr add local $LOCAL_IP peer $REMOTE_IP broadcast $LOCAL_IP dev $device
-        ip link set $device up
-        if ! iptables-save | grep "POSTROUTING -o eth0" &> /dev/null; then
-          iptables --append POSTROUTING --out-interface eth0 --table nat -j MASQUERADE
-        fi
-        if ! iptables-save | grep "FORWARD -i $device -j ACCEPT" &> /dev/null; then
-          iptables --append FORWARD --in-interface $device -j ACCEPT
-        fi
-        log "ip routes added"
-      fi
-    done
-    sleep 5
-  fi
-done
+openvpn --config openvpn.config
