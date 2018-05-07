@@ -1,4 +1,4 @@
-# Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+# Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ kind: Service
 metadata:
   name: vpn-shoot
   namespace: kube-system
-    app: vpn-shoot
 spec:
   selector:
     app: vpn-shoot
   type: LoadBalancer
   ports:
-  - name: sshd
+  - name: openvpn
     protocol: TCP
-    port: 22
-    targetPort: 22
+    port: 1194
+    targetPort: 1194

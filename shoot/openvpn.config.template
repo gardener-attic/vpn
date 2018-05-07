@@ -1,4 +1,4 @@
-# Copyright 2018 The Gardener Authors.
+# Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ dev tun0
 
 cipher AES-256-CBC
 
-# port can always be 1194 here as it is not visible externally. A different 
-# port can be configured for the external load balancer in the service 
+# port can always be 1194 here as it is not visible externally. A different
+# port can be configured for the external load balancer in the service
 # manifest
 port 1194
 
@@ -41,4 +41,3 @@ ca "/srv/secrets/vpn-shoot/ca.crt"
 dh "/srv/secrets/dh/dh2048.pem"
 
 tls-auth "/srv/secrets/tlsauth/vpn.tlsauth" 0
-

@@ -1,4 +1,4 @@
-# Copyright 2018 The Gardener Authors.
+# Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,52 +11,44 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
----
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vpn-shoot2
-  namespace: kube-system
+  name: vpn-seed-deployment
+  namespace: shoot-<shoot name an project>
+  labels:
+    app: vpn-seed-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vpn-shoot2
+      app: vpn-seed-deployment
   template:
     metadata:
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
       labels:
-        app: vpn-shoot2
+        app: vpn-seed-deployment
     spec:
-      tolerations:
-      - effect: NoExecute
-        operator: Exists
       containers:
-      - name: vpn-shoot
-        image: eu.gcr.io/gardener-project/gardener/openvpn-shoot:0.9.0-dev
+      - name: vpn-seed
+        image: eu.gcr.io/gardener-project/gardener/vpn-seed:0.9.0
         imagePullPolicy: IfNotPresent
+        env:
         securityContext:
           privileged: true
           capabilities:
             add:
-            - NET_ADMIN
-        resources:
-          requests:
-            cpu: 100m
+            - "NET_ADMIN"
         volumeMounts:
         - name: vpn-secrets
           mountPath: /srv/secrets
-        env:
-        - name:  SERVICE_NETWORK
-          value: # service network, e.g. 100.68.0.0/14
-        - name: POD_NETWORK
-          value: # pod network, e.g. 100.96.0.0/16
-        - name: NODE_NETWORK
-          value: # node network, e.g. 10.250.0.0/16
+        - name: kube-apiserver-basic-auth
+          mountPath: /srv/auth
       volumes:
       - name: vpn-secrets
         secret:
           defaultMode: 0400
           secretName: vpn-keys
+      - name: kube-apiserver-basic-auth
+        secret:
+          defaultMode: 420
+          secretName: kube-apiserver-basic-auth

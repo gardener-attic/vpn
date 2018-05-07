@@ -1,4 +1,4 @@
-# Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+# Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ spec:
         operator: Exists
       containers:
       - name: vpn-shoot
-        image: eu.gcr.io/sap-cloud-platform-dev1/garden/vpn/shoot:v0.0.7
+        image: eu.gcr.io/gardener-project/gardener/vpn-shoot:0.9.0
         imagePullPolicy: IfNotPresent
         securityContext:
           privileged: true
@@ -45,18 +45,18 @@ spec:
         resources:
           requests:
             cpu: 100m
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
         volumeMounts:
-        - name: vpn-ssh-authorized-keys
-          mountPath: /root/.ssh
-        - name: vpn-sshd-config
-          mountPath: /etc/ssh/sshd_config
-          subPath: sshd_config
+        - name: vpn-secrets
+          mountPath: /srv/secrets
+        env:
+        - name:  SERVICE_NETWORK
+          value: # service network, e.g. 100.68.0.0/14
+        - name: POD_NETWORK
+          value: # pod network, e.g. 100.96.0.0/16
+        - name: NODE_NETWORK
+          value: # node network, e.g. 10.250.0.0/16
       volumes:
-      - name: vpn-ssh-authorized-keys
+      - name: vpn-secrets
         secret:
-          secretName: vpn-ssh-authorized-keys
-      - name: vpn-sshd-config
-        configMap:
-          name: vpn-sshd-config
+          defaultMode: 0400
+          secretName: vpn-keys
