@@ -73,12 +73,19 @@ ENDPOINT=""
   done
 }
 
-function configure_tcp() {
-  echo $tcp_keepalive_time > /proc/sys/net/ipv4/tcp_keepalive_time
-  echo $tcp_keepalive_intvl > /proc/sys/net/ipv4/tcp_keepalive_intvl
-  echo $tcp_keepalive_probes > /proc/sys/net/ipv4/tcp_keepalive_probes
+function set_value() {
+  if [ -f $1 ] ; then
+    log "Setting $2 on $1"
+    echo "$2" > $1
+  fi
+}
 
-  echo $tcp_retries2 > /proc/sys/net/ipv4/tcp_retries2
+function configure_tcp() {
+  set_value /proc/sys/net/ipv4/tcp_keepalive_time $tcp_keepalive_time
+  set_value /proc/sys/net/ipv4/tcp_keepalive_intvl $tcp_keepalive_intvl
+  set_value /proc/sys/net/ipv4/tcp_keepalive_probes $tcp_keepalive_probes
+
+  set_value /proc/sys/net/ipv4/tcp_retries2 $tcp_retries2
 }
 
 configure_tcp
