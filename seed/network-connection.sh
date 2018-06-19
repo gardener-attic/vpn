@@ -32,7 +32,7 @@ curl_timeout_options="--connect-timeout 5 --max-time 5"
 
 function get_host() {
   if [[ -z "$MAIN_VPN_SEED" ]]; then
-    echo "$KUBE_APISERVER_SERVICE_HOST:$KUBE_APISERVER_SERVICE_PORT"
+    echo "kube-apiserver"
   else
     echo "127.0.0.1"
   fi
