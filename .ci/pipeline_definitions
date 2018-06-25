@@ -33,3 +33,5 @@ vpn:
           preprocess: 'finalise'
         release:
           nextversion: 'bump_minor'
+        component_descriptor:
+          component_name: 'github.com/gardener/vpn'
