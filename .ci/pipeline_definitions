@@ -21,7 +21,9 @@ vpn:
             dockerfile: 'shoot/Dockerfile'
     steps: ~
   variants:
-    head-update: ~
+    head-update:
+      traits:
+        draft_release: ~
     pull-request:
       traits:
         pull-request:
