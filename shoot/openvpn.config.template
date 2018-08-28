@@ -14,7 +14,7 @@
 
 mode server
 tls-server
-proto tcp-server
+proto tcp4-server
 dev tun0
 
 cipher AES-256-CBC
