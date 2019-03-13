@@ -20,9 +20,21 @@ function log() {
 
 trap 'exit' TERM SIGINT
 
-service_network="${SERVICE_NETWORK:-100.64.0.0/13}"
-pod_network="${POD_NETWORK:-100.96.0.0/11}"
-node_network="${NODE_NETWORK:-10.250.0.0/16}"
+# for each cidr config, it looks first at its env var, then a local file (which may be a volume mount), then the default
+baseConfigDir="/init-config"
+fileServiceNetwork=
+filePodNetwork=
+fileNodeNetwork=
+[ -e "${baseConfigDir}/serviceNetwork" ] && fileServiceNetwork=$(cat ${baseConfigDir}/serviceNetwork)
+[ -e "${baseConfigDir}/podNetwork" ] && filePodNetwork=$(cat ${baseConfigDir}/podNetwork)
+[ -e "${baseConfigDir}/nodeNetwork" ] && fileNodeNetwork=$(cat ${baseConfigDir}/nodeNetwork)
+
+service_network="${SERVICE_NETWORK:-${fileServiceNetwork}}"
+service_network="${service_network:-100.64.0.0/13}"
+pod_network="${POD_NETWORK:-${filePodNetwork}}"
+pod_network="${pod_network:-100.96.0.0/11}"
+node_network="${NODE_NETWORK:-${fileNodeNetwork}}"
+node_network="${node_network:-10.250.0.0/16}"
 
 # calculate netmask for given CIDR (required by openvpn)
 #
