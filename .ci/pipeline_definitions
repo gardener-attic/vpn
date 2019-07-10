@@ -20,7 +20,7 @@ vpn:
             image: 'eu.gcr.io/gardener-project/gardener/vpn-shoot'
             dockerfile: 'shoot/Dockerfile'
     steps: ~
-  variants:
+  jobs:
     head-update:
       traits:
         draft_release: ~
