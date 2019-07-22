@@ -17,6 +17,11 @@ tls-server
 proto tcp4-server
 dev tun0
 
+# Additonal optimizations
+txqueuelen 1000
+tun-mtu 1400
+mssfix 1360
+
 cipher AES-256-CBC
 
 # port can always be 1194 here as it is not visible externally. A different
