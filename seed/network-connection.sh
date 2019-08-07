@@ -90,6 +90,65 @@ function configure_tcp() {
 
 configure_tcp
 
+# for each cidr config, it looks first at its env var, then a local file (which may be a volume mount), then the default
+baseConfigDir="/init-config"
+fileServiceNetwork=
+filePodNetwork=
+fileNodeNetwork=
+[ -e "${baseConfigDir}/serviceNetwork" ] && fileServiceNetwork=$(cat ${baseConfigDir}/serviceNetwork)
+[ -e "${baseConfigDir}/podNetwork" ] && filePodNetwork=$(cat ${baseConfigDir}/podNetwork)
+[ -e "${baseConfigDir}/nodeNetwork" ] && fileNodeNetwork=$(cat ${baseConfigDir}/nodeNetwork)
+
+service_network="${SERVICE_NETWORK:-${fileServiceNetwork}}"
+service_network="${service_network:-100.64.0.0/13}"
+pod_network="${POD_NETWORK:-${filePodNetwork}}"
+pod_network="${pod_network:-100.96.0.0/11}"
+node_network="${NODE_NETWORK:-${fileNodeNetwork}}"
+node_network="${node_network:-10.250.0.0/16}"
+
+# calculate netmask for given CIDR (required by openvpn)
+CIDR2Netmask() {
+    local cidr="$1"
+
+    local ip=$(echo $cidr | cut -f1 -d/)
+    local numon=$(echo $cidr | cut -f2 -d/)
+
+    local numoff=$(( 32 - $numon ))
+    while [ "$numon" -ne "0" ]; do
+            start=1${start}
+            numon=$(( $numon - 1 ))
+    done
+    while [ "$numoff" -ne "0" ]; do
+        end=0${end}
+        numoff=$(( $numoff - 1 ))
+    done
+    local bitstring=$start$end
+
+    bitmask=$(echo "obase=16 ; $(( 2#$bitstring )) " | bc | sed 's/.\{2\}/& /g')
+
+    for t in $bitmask ; do
+        str=$str.$((16#$t))
+    done
+
+    echo $str | cut -f2-  -d\.
+}
+
+service_network_address=$(echo $service_network | cut -f1 -d/)
+service_network_netmask=$(CIDR2Netmask $service_network)
+
+pod_network_address=$(echo $pod_network | cut -f1 -d/)
+pod_network_netmask=$(CIDR2Netmask $pod_network)
+
+node_network_address=$(echo $node_network | cut -f1 -d/)
+node_network_netmask=$(CIDR2Netmask $node_network)
+
+sed -e "s/\${SERVICE_NETWORK_ADDRESS}/${service_network_address}/" \
+    -e "s/\${SERVICE_NETWORK_NETMASK}/${service_network_netmask}/" \
+    -e "s/\${POD_NETWORK_ADDRESS}/${pod_network_address}/" \
+    -e "s/\${POD_NETWORK_NETMASK}/${pod_network_netmask}/" \
+    -e "s/\${NODE_NETWORK_ADDRESS}/${node_network_address}/" \
+    -e "s/\${NODE_NETWORK_NETMASK}/${node_network_netmask}/" openvpn.config.template > openvpn.config
+
 while : ; do
     # identify_endpoint may get an invalid endpoint, need
     # to make sure openvpn is able to pick up the correct

@@ -42,3 +42,10 @@ cipher AES-256-CBC
 
 # https://openvpn.net/index.php/open-source/documentation/howto.html#mitm
 remote-cert-tls server
+
+# pull filter
+pull-filter accept "route ${SERVICE_NETWORK_ADDRESS} ${SERVICE_NETWORK_NETMASK}"
+pull-filter accept "route ${POD_NETWORK_ADDRESS} ${POD_NETWORK_NETMASK}"
+pull-filter accept "route ${NODE_NETWORK_ADDRESS} ${NODE_NETWORK_NETMASK}"
+pull-filter ignore "route "
+pull-filter ignore redirect-gateway

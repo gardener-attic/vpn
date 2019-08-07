@@ -45,8 +45,6 @@ CIDR2Netmask() {
     local numon=$(echo $cidr | cut -f2 -d/)
 
     local numoff=$(( 32 - $numon ))
-    local start=
-    local end=
     while [ "$numon" -ne "0" ]; do
             start=1${start}
             numon=$(( $numon - 1 ))
@@ -59,7 +57,6 @@ CIDR2Netmask() {
 
     bitmask=$(echo "obase=16 ; $(( 2#$bitstring )) " | bc | sed 's/.\{2\}/& /g')
 
-    local str=
     for t in $bitmask ; do
         str=$str.$((16#$t))
     done
