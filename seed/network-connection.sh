@@ -28,7 +28,12 @@ tcp_keepalive_intvl="${TCP_KEEPALIVE_INTVL:-75}"
 tcp_keepalive_probes="${TCP_KEEPALIVE_PROBES:-9}"
 tcp_retries2="${TCP_RETRIES2:-5}"
 
-curl_timeout_options="--connect-timeout 5 --max-time 5"
+APISERVER_AUTH_MODE="${APISERVER_AUTH_MODE:-basic-auth}"
+APISERVER_AUTH_MODE_BASIC_AUTH_CSV="${APISERVER_AUTH_MODE_BASIC_AUTH_CSV:-/srv/auth/basic_auth.csv}"
+APISERVER_AUTH_MODE_BASIC_AUTH_USERNAME="${APISERVER_AUTH_MODE_BASIC_AUTH_USERNAME:-admin}"
+APISERVER_AUTH_MODE_CLIENT_CERT_CA="${APISERVER_AUTH_MODE_CLIENT_CERT_CA:-/srv/secrets/vpn-seed/ca.crt}"
+APISERVER_AUTH_MODE_CLIENT_CERT_CRT="${APISERVER_AUTH_MODE_CLIENT_CERT_CRT:-/srv/secrets/vpn-seed/tls.crt}"
+APISERVER_AUTH_MODE_CLIENT_CERT_KEY="${APISERVER_AUTH_MODE_CLIENT_CERT_KEY:-/srv/secrets/vpn-seed/tls.key}"
 
 function get_host() {
   if [[ -z "$MAIN_VPN_SEED" ]]; then
@@ -41,13 +46,19 @@ function get_host() {
 function identify_endpoint() {
   log "trying to identify the endpoint (load balancer name of $service_name service) myself..."
 
+  curl_auth_flags=""
+  if [[ "$APISERVER_AUTH_MODE" == "basic-auth" ]]; then
+    curl_auth_flags="--insecure --user ${APISERVER_AUTH_MODE_BASIC_AUTH_USERNAME}:$(cat ${APISERVER_AUTH_MODE_BASIC_AUTH_CSV} | sed -E 's/^([^,]*),.*$/\1/')"
+  elif [[ "$APISERVER_AUTH_MODE" == "client-cert" ]]; then
+    curl_auth_flags="--cacert $APISERVER_AUTH_MODE_CLIENT_CERT_CA --cert $APISERVER_AUTH_MODE_CLIENT_CERT_CRT --key $APISERVER_AUTH_MODE_CLIENT_CERT_KEY"
+  fi
+
   set +e
-  BASIC_AUTH="admin:$(cat /srv/auth/basic_auth.csv | sed -E 's/^([^,]*),.*$/\1/')"
   SERVICE_STATUS="$(curl \
-                      ${curl_timeout_options} \
+                      --connect-timeout 5 \
+                      --max-time 5 \
                       --silent \
-                      --insecure \
-                      --user "$BASIC_AUTH" \
+                      $curl_auth_flags \
                       --header "Accept: application/json" \
                       --request GET \
                       "https://$(get_host)/api/v1/namespaces/kube-system/services/$service_name")"
