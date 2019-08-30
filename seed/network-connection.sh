@@ -150,15 +150,17 @@ service_network_netmask=$(CIDR2Netmask $service_network)
 pod_network_address=$(echo $pod_network | cut -f1 -d/)
 pod_network_netmask=$(CIDR2Netmask $pod_network)
 
-node_network_address=$(echo $node_network | cut -f1 -d/)
-node_network_netmask=$(CIDR2Netmask $node_network)
-
 sed -e "s/\${SERVICE_NETWORK_ADDRESS}/${service_network_address}/" \
     -e "s/\${SERVICE_NETWORK_NETMASK}/${service_network_netmask}/" \
     -e "s/\${POD_NETWORK_ADDRESS}/${pod_network_address}/" \
-    -e "s/\${POD_NETWORK_NETMASK}/${pod_network_netmask}/" \
-    -e "s/\${NODE_NETWORK_ADDRESS}/${node_network_address}/" \
-    -e "s/\${NODE_NETWORK_NETMASK}/${node_network_netmask}/" openvpn.config.template > openvpn.config
+    -e "s/\${POD_NETWORK_NETMASK}/${pod_network_netmask}/" openvpn.config.template > openvpn.config
+
+for n in $(echo $node_network |  sed 's/[][]//g' | sed 's/,/ /g')
+do
+    node_network_address=$(echo $n | cut -f1 -d/)
+    node_network_netmask=$(CIDR2Netmask $n)
+    sed -i  "49ipull-filter accept \"route ${node_network_address} ${node_network_netmask}\"" openvpn.config
+done
 
 while : ; do
     # identify_endpoint may get an invalid endpoint, need
