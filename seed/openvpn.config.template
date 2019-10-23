@@ -50,3 +50,5 @@ pull-filter accept "route ${NODE_NETWORK_ADDRESS} ${NODE_NETWORK_NETMASK}"
 pull-filter accept "route 192.168.123."
 pull-filter ignore "route"
 pull-filter ignore redirect-gateway
+pull-filter ignore route-ipv6
+pull-filter ignore redirect-gateway-ipv6
