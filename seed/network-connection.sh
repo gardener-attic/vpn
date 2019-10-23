@@ -115,7 +115,7 @@ service_network="${service_network:-100.64.0.0/13}"
 pod_network="${POD_NETWORK:-${filePodNetwork}}"
 pod_network="${pod_network:-100.96.0.0/11}"
 node_network="${NODE_NETWORK:-${fileNodeNetwork}}"
-node_network="${node_network:-10.250.0.0/16}"
+node_network="${node_network:-}"
 
 # calculate netmask for given CIDR (required by openvpn)
 CIDR2Netmask() {
@@ -153,14 +153,22 @@ pod_network_netmask=$(CIDR2Netmask $pod_network)
 sed -e "s/\${SERVICE_NETWORK_ADDRESS}/${service_network_address}/" \
     -e "s/\${SERVICE_NETWORK_NETMASK}/${service_network_netmask}/" \
     -e "s/\${POD_NETWORK_ADDRESS}/${pod_network_address}/" \
-    -e "s/\${POD_NETWORK_NETMASK}/${pod_network_netmask}/" openvpn.config.template > openvpn.config
+    -e "s/\${POD_NETWORK_NETMASK}/${pod_network_netmask}/" \
+    openvpn.config.template > openvpn.config
 
-for n in $(echo $node_network |  sed 's/[][]//g' | sed 's/,/ /g')
-do
-    node_network_address=$(echo $n | cut -f1 -d/)
-    node_network_netmask=$(CIDR2Netmask $n)
-    sed -i  "49ipull-filter accept \"route ${node_network_address} ${node_network_netmask}\"" openvpn.config
-done
+if [[ ! -z "$node_network" ]]; then
+  for n in $(echo $node_network |  sed 's/[][]//g' | sed 's/,/ /g')
+  do
+      node_network_address=$(echo $n | cut -f1 -d/)
+      node_network_netmask=$(CIDR2Netmask $n)
+      echo "pull-filter accept \"route ${node_network_address} ${node_network_netmask}\"" >> openvpn.config
+  done
+fi
+
+echo "pull-filter ignore \"route\"" >> openvpn.config
+echo "pull-filter ignore redirect-gateway" >> openvpn.config
+echo "pull-filter ignore route-ipv6" >> openvpn.config
+echo "pull-filter ignore redirect-gateway-ipv6" >> openvpn.config
 
 while : ; do
     # identify_endpoint may get an invalid endpoint, need
