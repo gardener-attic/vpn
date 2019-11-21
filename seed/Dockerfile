@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.8
+FROM alpine:3.10.3
 
-RUN apk add --update bash curl openvpn bc jq && \
+RUN apk add --update bash curl openvpn jq && \
     rm -rf /var/cache/apk/*
 
-ADD seed/network-connection.sh seed/openvpn.config.template /
+ADD seed/network-connection.sh seed/openvpn.config /
 
 # We use "exec" and "trap 'exit' TERM" in the bash script, otherwise,
 # the script won't recieve and react to SIGTERM
