@@ -165,6 +165,7 @@ if [[ ! -z "$node_network" ]]; then
   done
 fi
 
+echo "pull-filter accept \"route 192.168.123.\"" >> openvpn.config
 echo "pull-filter ignore \"route\"" >> openvpn.config
 echo "pull-filter ignore redirect-gateway" >> openvpn.config
 echo "pull-filter ignore route-ipv6" >> openvpn.config
