@@ -24,6 +24,7 @@ vpn:
     head-update:
       traits:
         draft_release: ~
+        component_descriptor: ~
     pull-request:
       traits:
         pull-request: ~
